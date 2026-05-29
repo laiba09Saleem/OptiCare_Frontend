@@ -1,7 +1,7 @@
 import { authService } from "./authService";
 
 // FastAPI backend base URL — change when backend is live
-export const API_BASE_URL = "http://localhost:8000";
+export const API_BASE_URL = "https://laiba05saleem-opticare-backend.hf.space";
 
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = authService.getToken();
