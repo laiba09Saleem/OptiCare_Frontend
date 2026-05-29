@@ -38,6 +38,8 @@ models/*.pth
 scratch/
 
 # IDEs
+.vite/
+.vscode/
 .vscode/
 .idea/
 .DS_Store
