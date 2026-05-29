@@ -9,11 +9,12 @@ import PatientDetailsSheet from './PatientDetailsSheet';
 
 interface PatientCardProps {
   patient: Patient;
+  onRefresh?: () => void;
 }
 
-const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
+const PatientCard: React.FC<PatientCardProps> = ({ patient, onRefresh }) => {
   const [isDetailsOpen, setIsDetailsOpen] = React.useState(false);
-  const { status: subStatus, daysLeft } = checkSubscriptionStatus(patient);
+  const { status: subStatus, daysLeft } = patient ? checkSubscriptionStatus(patient) : { status: 'active', daysLeft: 30 };
 
   const statusStyles = {
     Critical: 'bg-red-500/10 text-red-500 border-red-500/20',
@@ -110,6 +111,7 @@ const PatientCard: React.FC<PatientCardProps> = ({ patient }) => {
         patient={patient}
         isOpen={isDetailsOpen}
         onClose={() => setIsDetailsOpen(false)}
+        onRefresh={onRefresh}
       />
     </>
   );

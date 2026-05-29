@@ -10,9 +10,15 @@ interface PatientListProps {
   patients?: Patient[];
   isLoading?: boolean;
   showExpired?: boolean;
+  onRefresh?: () => void;
 }
 
-const PatientList: React.FC<PatientListProps> = ({ patients = [], isLoading = false, showExpired = false }) => {
+const PatientList: React.FC<PatientListProps> = ({
+  patients = [],
+  isLoading = false,
+  showExpired = false,
+  onRefresh
+}) => {
   const displayedPatients = showExpired
     ? patients
     : patients.filter(p => {
@@ -61,7 +67,7 @@ const PatientList: React.FC<PatientListProps> = ({ patients = [], isLoading = fa
   return (
     <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {displayedPatients.map((patient) => (
-        <PatientCard key={patient.id} patient={patient} />
+        <PatientCard key={patient.id} patient={patient} onRefresh={onRefresh} />
       ))}
     </div>
   );

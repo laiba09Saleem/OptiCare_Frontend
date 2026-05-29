@@ -1,12 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Activity, Users, FileText, HeartPulse, RefreshCcw } from "lucide-react";
+import { Activity, Users, FileText, HeartPulse, RefreshCcw, Building2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { patientsService } from "@/services/patientsService";
 import PatientFilters from "@/components/PatientFilters";
 import PatientList from "@/components/PatientList";
 import AddPatientDialog from "@/components/AddPatientDialog";
+import WoundReviewInbox from "@/components/WoundReviewInbox";
+import EmergencyAlertCenter from "@/components/EmergencyAlertCenter";
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as ChartTooltip, Legend, CartesianGrid } from "recharts";
 
 const Dashboard = () => {
@@ -16,6 +18,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortBy, setSortBy] = useState("name");
+  const [useWardFilter, setUseWardFilter] = useState(true);
 
   // Manual Fetching States
   const [patients, setPatients] = useState<any[]>([]);
@@ -29,22 +32,26 @@ const Dashboard = () => {
   const [vitalsHistory, setVitalsHistory] = useState<any[]>([]);
   const [isVitalsLoading, setIsVitalsLoading] = useState(false);
 
-  const fetchPatients = async () => {
-    setIsLoading(true);
+  const fetchPatients = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     setError(null);
-    try {
-      const data = await patientsService.getActivePatients();
 
-      if (user?.department && user.department !== "General") {
-        const filtered = data.filter((p: any) => p.department === user.department);
-        setPatients(filtered);
-      } else {
-        setPatients(data);
-      }
+    // Safety timeout to prevent infinite skeletons
+    const timeout = setTimeout(() => {
+      if (!silent) setIsLoading(false);
+    }, 10000);
+
+    try {
+      // Use department as ward_name if toggle is ON
+      const filter = useWardFilter && user?.department && user.department !== "General" ? user.department : undefined;
+      const data = await patientsService.getActivePatients(filter);
+      setPatients(data);
     } catch (err: any) {
-      setError(err.message);
+      if (!silent) setError(err.message);
+      console.error("Dashboard Fetch Error:", err);
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
+      clearTimeout(timeout);
     }
   };
 
@@ -65,7 +72,15 @@ const Dashboard = () => {
   useEffect(() => {
     fetchPatients();
     fetchDashboardMetadata();
-  }, []);
+
+    // Auto-refresh patients and stats every 10 seconds silently
+    const interval = setInterval(() => {
+      fetchPatients(true);
+      fetchDashboardMetadata();
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [useWardFilter]);
 
   // Set default selected patient for the chart when patients are fetched
   useEffect(() => {
@@ -161,7 +176,18 @@ const Dashboard = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold tracking-tight">Patient Management</h2>
-          <AddPatientDialog onSuccess={fetchPatients} />
+          <div className="flex items-center gap-4">
+            <Button
+              variant={useWardFilter ? "default" : "outline"}
+              size="sm"
+              onClick={() => setUseWardFilter(!useWardFilter)}
+              className={`rounded-xl gap-2 ${useWardFilter ? 'bg-brand' : ''}`}
+            >
+              <Building2 className="h-4 w-4" />
+              {useWardFilter ? `${user?.department || "My Ward"}` : "Entire Hospital"}
+            </Button>
+            <AddPatientDialog onSuccess={() => fetchPatients()} />
+          </div>
         </div>
 
         <PatientFilters
@@ -176,13 +202,23 @@ const Dashboard = () => {
         {error ? (
           <div className="flex flex-col items-center justify-center py-12 bg-destructive/5 rounded-3xl border border-destructive/20 text-center">
             <p className="text-destructive font-bold mb-4">Error: {error}</p>
-            <Button onClick={fetchPatients} className="flex items-center gap-2">
-              <RefreshCcw className="h-4 w-4" /> Retry Connection
+            <Button variant="ghost" size="sm" onClick={() => fetchPatients()}>
+              <RefreshCcw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         ) : (
-          <PatientList patients={filteredPatients} isLoading={isLoading} />
+          <PatientList
+            patients={filteredPatients}
+            isLoading={isLoading}
+            showExpired={statusFilter === "All"}
+            onRefresh={() => fetchPatients(true)}
+          />
         )}
+      </div>
+
+      {/* Wound Review Inbox Section */}
+      <div className="mb-12">
+        <WoundReviewInbox />
       </div>
 
       <div className="mt-16 grid gap-6 lg:grid-cols-3">
@@ -309,7 +345,8 @@ const Dashboard = () => {
           </div>
         </Card>
       </div>
-    </div>
+      <EmergencyAlertCenter />
+    </div >
   );
 };
 

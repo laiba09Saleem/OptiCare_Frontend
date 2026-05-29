@@ -16,6 +16,13 @@ const Navbar = () => {
 
   if (!isAuthenticated) return null;
 
+  const initials = user?.name
+    ?.split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "DR";
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/60 backdrop-blur-xl">
       <div className="container flex h-20 items-center justify-between">
@@ -52,11 +59,21 @@ const Navbar = () => {
           ))}
         </nav>
 
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3">
+          {/* Profile Avatar Button */}
+          <Link
+            to="/profile"
+            title="My Profile"
+            className="h-10 w-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-md hover:shadow-lg hover:scale-105 transition-all ring-2 ring-background"
+          >
+            {initials}
+          </Link>
+
           <div className="hidden flex-col items-end sm:flex">
             <span className="text-sm font-bold">{user?.name}</span>
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Healthcare Provider</span>
           </div>
+
           <Button
             variant="ghost"
             size="icon"

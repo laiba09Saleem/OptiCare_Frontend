@@ -57,7 +57,10 @@ const AddPatientDialog: React.FC<AddPatientDialogProps> = ({ onSuccess }) => {
     setAnalyzing(true);
     try {
       const result = await aiService.analyzeWound(selectedFile, formData.clinicalNotes);
-      setAiResult(result.prediction);
+      setAiResult({
+        ...result.prediction,
+        image_url: result.image_url
+      });
 
       // if image is not
       if (!result.prediction.is_valid_wound) {
